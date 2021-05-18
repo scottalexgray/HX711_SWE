@@ -20,27 +20,31 @@ HX711_SWE::HX711_SWE(byte dout, byte pd_sck, byte gain) :
 	}
 }
 
-HX711_SWE::HX711_SWE() {
-}
-
-HX711_SWE::~HX711_SWE() {
-}
-
-void HX711_SWE::begin() {
+void HX711_SWE::begin() 
+{
 	pinMode(PD_SCK, OUTPUT);
 	pinMode(DOUT, INPUT);
 	digitalWrite(PD_SCK, LOW);
+
+
+
+	long value = read();
+
+	if(value == 999999)
+	{
+		Serial.println("Loadcell reading timed out");
+	}
 }
 
-void HX711_SWE::begin(byte dout, byte pd_sck, byte gain) {
+/*void HX711_SWE::begin(byte dout, byte pd_sck, byte gain) {
  	PD_SCK = pd_sck;
 	DOUT = dout;
 	pinMode(PD_SCK, OUTPUT);
 	pinMode(DOUT, INPUT);
   set_gain(gain);
-}
+}*/
 
-void HX711_SWE::set_gain(byte gain) {
+/*void HX711_SWE::set_gain(byte gain) {
 	switch (gain) {
 		case 128:		// channel A, gain factor 128
 			GAIN = 1;
@@ -58,20 +62,31 @@ void HX711_SWE::set_gain(byte gain) {
 
 	digitalWrite(PD_SCK, LOW);
 	read();
-}
+}*/
 
-long HX711_SWE::read(time_t timeout) {
-	// wait for the chip to become ready
-	for (time_t ms=millis(); !is_ready() && (millis() - ms < timeout);) {
-		// Will do nothing on Arduino but 
-    // prevent resets of ESP8266 (Watchdog Issue)
-    // or keeps cloud housekeeping running on Particle devices
-		yield();
-	}
-  // still not ready after timeout periode, report error Not-A-Number
-  if (!is_ready()) return NAN;
+long HX711_SWE::read(time_t timeout) 
+{
+	power_up();
 
 	unsigned long value = 0;
+
+
+	time32_t loadcellReadyTimeout = 5000;
+	time32_t startMillis = millis();  
+	while((millis() - startMillis) < loadcellReadyTimeout && !is_ready())
+	{
+		//do nothing
+	}
+	if(is_ready())
+	{
+		//continue
+	}
+	else
+	{
+		value = 999999;
+		return value;
+	}
+
 	uint8_t data[3] = { 0 };
 	uint8_t filler = 0x00;
 
@@ -81,7 +96,8 @@ long HX711_SWE::read(time_t timeout) {
 	data[0] = shiftIn(DOUT, PD_SCK, MSBFIRST);
 
 	// set the channel and the gain factor for the next reading using the clock pin
-	for (unsigned int i = 0; i < GAIN; i++) {
+	for (unsigned int i = 0; i < GAIN; i++) 
+	{
 		digitalWrite(PD_SCK, HIGH);
 		digitalWrite(PD_SCK, LOW);
 	}
@@ -98,6 +114,10 @@ long HX711_SWE::read(time_t timeout) {
 		  | static_cast<unsigned long>(data[2]) << 16
 		  | static_cast<unsigned long>(data[1]) << 8
 		  | static_cast<unsigned long>(data[0]) ;
+
+	//power off the loadcell amplifier
+	power_down(); 
+	delay(150);
 
 	return static_cast<long>(value);
 }
@@ -149,6 +169,7 @@ long HX711_SWE::get_offset() {
 void HX711_SWE::power_down() {
 	digitalWrite(PD_SCK, LOW);
 	digitalWrite(PD_SCK, HIGH);
+	delay(150);
 }
 
 void HX711_SWE::power_up() {

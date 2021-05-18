@@ -20,14 +20,14 @@ class HX711_SWE
 		// gain: 128 or 64 for channel A; channel B works with 32 gain factor only
 		HX711_SWE(byte dout, byte pd_sck, byte gain = 128);
 
-		HX711_SWE();
+		//HX711_SWE();
 
-		virtual ~HX711_SWE();
+		//virtual ~HX711_SWE();
 
 		// Allows to set the pins and gain later than in the constructor
   
-    void begin();
-		void begin(byte dout, byte pd_sck, byte gain = 128);
+    	void begin();
+		//void begin(byte dout, byte pd_sck, byte gain = 128);
 
 		// check if HX711 is ready
 		// from the datasheet: When output data is not ready for retrieval, digital output pin DOUT is high. Serial clock
